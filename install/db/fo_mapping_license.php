@@ -464,11 +464,18 @@ function renameLicenses($shortname_array, $Verbose)
     $new_rf_pk = check_shortname($new_shortname);
     if (-1 != $old_rf_pk && -1 != $new_rf_pk)
     {
-      $res = update_license($old_rf_pk, $new_rf_pk);
-      if (0 == $res) 
-      {
-        if($Verbose)
-          print "update successfully, substitute rf_id(license_name) from $old_rf_pk($old_shortname) to $new_rf_pk($new_shortname).\n";
+      if(is_candidate($new_rf_pk)) {
+        print "WARNING: Existing license candidate $new_shortname will be replaced with rename $old_shortname -> $new_shortname\n";
+        change_license_name($old_shortname, $new_shortname);
+        replace_candidate($new_rf_pk, $old_rf_pk);
+      }
+      else {
+        $res = update_license($old_rf_pk, $new_rf_pk);
+        if (0 == $res)
+        {
+          if($Verbose)
+            print "update successfully, substitute rf_id(license_name) from $old_rf_pk($old_shortname) to $new_rf_pk($new_shortname).\n";
+        }
       }
     }
     else if (-1 != $old_rf_pk && -1 == $new_rf_pk)
@@ -476,8 +483,7 @@ function renameLicenses($shortname_array, $Verbose)
       $res =  change_license_name($old_shortname, $new_shortname);
       if (0 == $res)
       {
-        if($Verbose)
-          print "change license name successfully, substitute license shortname from $old_shortname to $new_shortname.\n";
+        print "INFO: Changed license name successfully, substitute license shortname from $old_shortname to $new_shortname.\n";
       }
 
     } 
@@ -490,6 +496,63 @@ function renameLicenses($shortname_array, $Verbose)
 
   if($Verbose)
     print "End!\n";
+}
+
+function is_candidate($rf_pk)
+{
+  global $PG_CONN;
+
+  $sql = "SELECT * FROM ONLY license_candidate WHERE rf_pk = $rf_pk;";
+  $result = pg_query($PG_CONN, $sql);
+  DBCheckResult($result, $sql, __FILE__, __LINE__);
+  $row = pg_fetch_assoc($result);
+  pg_free_result($result);
+
+  if (! empty($row)) {
+    return true;
+  } else {
+    return false;
+  }
+}
+
+function replace_candidate($candidate_pk, $new_pk)
+{
+  global $PG_CONN;
+
+  $updateTables = array(
+    "clearing_event",
+    "license_file",
+    "license_set_bulk",
+    "upload_clearing_license"
+  );
+
+  /** transaction begin */
+  $sql = "BEGIN;";
+  $result_begin = pg_query($PG_CONN, $sql);
+  DBCheckResult($result_begin, $sql, __FILE__, __LINE__);
+  pg_free_result($result_begin);
+
+  foreach ($updateTables as $table) {
+    $sql = "update $table set rf_fk = $new_pk where rf_fk = $candidate_pk;";
+    print "$sql\n";
+    $result_license_file = pg_query($PG_CONN, $sql);
+    DBCheckResult($result_license_file, $sql, __FILE__, __LINE__);
+    pg_free_result($result_license_file);
+  }
+
+  /** delete data of candidate license */
+  $sql = "DELETE FROM license_candidate where rf_pk = $candidate_pk;";
+  print "$sql\n";
+  $result_delete = pg_query($PG_CONN, $sql);
+  DBCheckResult($result_delete, $sql, __FILE__, __LINE__);
+  pg_free_result($result_delete);
+
+  /** transaction end */
+  $sql = "COMMIT;";
+  $result_end = pg_query($PG_CONN, $sql);
+  DBCheckResult($result_end, $sql, __FILE__, __LINE__);
+  pg_free_result($result_end);
+
 }
 
 /** 
@@ -526,17 +589,24 @@ function update_license($old_rf_pk, $new_rf_pk)
 {
   global $PG_CONN;
 
+  $updateTables = array(
+    "license_file",
+    "clearing_event",
+    "upload_clearing_license"
+  );
+
   /** transaction begin */
   $sql = "BEGIN;";
   $result_begin = pg_query($PG_CONN, $sql);
   DBCheckResult($result_begin, $sql, __FILE__, __LINE__);
   pg_free_result($result_begin);
 
-  /* Update license_file table, substituting the old_rf_id  with the new_rf_id */
-  $sql = "update license_file set rf_fk = $new_rf_pk where rf_fk = $old_rf_pk;";
-  $result_license_file = pg_query($PG_CONN, $sql);
-  DBCheckResult($result_license_file, $sql, __FILE__, __LINE__);
-  pg_free_result($result_license_file);
+  foreach ($updateTables as $table) {
+    $sql = "update $table set rf_fk = $new_rf_pk where rf_fk = $old_rf_pk;";
+    $result_license_file = pg_query($PG_CONN, $sql);
+    DBCheckResult($result_license_file, $sql, __FILE__, __LINE__);
+    pg_free_result($result_license_file);
+  }
 
   /* Check if license_file_audit table exists */
   $sql = "select count(tablename) from pg_tables where tablename like 'license_file_audit';";

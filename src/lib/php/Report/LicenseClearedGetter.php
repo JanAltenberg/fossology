@@ -199,7 +199,10 @@ class LicenseClearedGetter extends ClearedGetterCommon
     if (!array_key_exists($licenseId, $this->licenseCache)) {
       $this->licenseCache[$licenseId] = $this->licenseDao->getLicenseById($licenseId, $groupId);
     }
-    return $this->licenseCache[$licenseId]->getText();
+    if ($this->licenseCache[$licenseId] !== null)
+       return $this->licenseCache[$licenseId]->getText();
+    else
+       return null;
   }
 
   /**
@@ -211,7 +214,10 @@ class LicenseClearedGetter extends ClearedGetterCommon
     if (!array_key_exists($licenseId, $this->licenseCache)) {
       $this->licenseCache[$licenseId] = $this->licenseDao->getLicenseById($licenseId, $groupId);
     }
-    return $this->licenseCache[$licenseId]->getRisk();
+    if ($this->licenseCache[$licenseId] !== null)
+      return $this->licenseCache[$licenseId]->getRisk();
+    else
+      return null;
   }
 
   /**

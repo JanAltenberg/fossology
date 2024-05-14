@@ -359,11 +359,14 @@ class AjaxExplorer extends DefaultPlugin
 
       if ($request->get('fromRest')) {
         foreach ($licenseEntries as $shortName) {
-          $licenseEntriesRest[] = array(
-            "id" => $this->licenseDao->getLicenseByShortName($shortName, $groupId)->getId(),
-            "name" => $shortName,
-            "agents" => []
-          );
+          $lookedupLicense = $this->licenseDao->getLicenseByShortName($shortName, $groupId);
+          if ($lookedupLicense !== null) {
+            $licenseEntriesRest[] = array(
+              "id" => $this->licenseDao->getLicenseByShortName($shortName, $groupId)->getId(),
+              "name" => $shortName,
+              "agents" => []
+            );
+	  }
         }
       }
     } else {
@@ -385,12 +388,19 @@ class AjaxExplorer extends DefaultPlugin
               "id" => intval($match['agent_id']),
               "matchPercentage" => intval($match['match_percentage']),
             );
-          }
-          $licenseEntriesRest[] = array(
-            "id" => $this->licenseDao->getLicenseByShortName($shortName, $groupId)->getId(),
-            "name" => $shortName,
-            "agents" => $agentEntriesRest,
-          );
+	  }
+
+          $lookedupLicense = $this->licenseDao->getLicenseByShortName($shortName, $groupId);
+          if ($lookedupLicense !== null) {
+            $licenseEntriesRest[] = array(
+              "id" => $lookedupLicense->getId(),
+              "name" => $shortName,
+              "agents" => $agentEntriesRest,
+	    );
+	  }
+	  else {
+            $shortName = $shortName . "_License_not_found_in_map";
+	  }
           $licenseEntries[] = $shortName . " [" . implode("][", $agentEntries) . "]";
         }
       }

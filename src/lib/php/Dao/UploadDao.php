@@ -793,6 +793,12 @@ ORDER BY lft asc
       $row = $this->dbManager->getSingleRow($sql, array($uploadId), $stmt);
       $this->dbManager->commit();
     }
+
+    /* OSSelot */
+    if (empty($row['ri_spdx_selection'])) {
+      $row['ri_spdx_selection'] = 'checked,unchecked';
+    }
+
     return $row;
   }
 

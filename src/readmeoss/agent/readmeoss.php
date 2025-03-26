@@ -37,6 +37,7 @@
 
 use Fossology\Lib\Agent\Agent;
 use Fossology\Lib\Dao\UploadDao;
+use Fossology\Lib\Data\LicenseRef;
 use Fossology\Lib\Report\LicenseClearedGetter;
 use Fossology\Lib\Report\XpClearedGetter;
 use Fossology\Lib\Report\LicenseMainGetter;
@@ -195,7 +196,12 @@ class ReadmeOssAgent extends Agent
     $outData = "";
     foreach ($dataForReadME as $statements) {
       if ($extract == 'text') {
-        $outData .= $statements["content"] . $break;
+	/*
+	 * Replace the LicenseRef prexif as requested by Oliver Fendt
+	 */
+        $removePrefix = str_replace(LicenseRef::SPDXREF_PREFIX_FOSSOLOGY, "", $statements["content"]);
+        $removePrefix = str_replace(LicenseRef::SPDXREF_PREFIX, "", $removePrefix);
+        $outData .= $removePrefix . $break;
       }
       $outData .= str_replace("\n", "\r\n", $statements[$extract]) . $break;
       if (!empty($addSeparator)) {

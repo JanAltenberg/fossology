@@ -410,6 +410,17 @@ class SpdxAgent extends Agent
             ->getLicenseObj()->getSpdxId();
         }
       }
+
+      /* spdx2tv: Specific handling for OSSelot */
+      if ($this->outputFormat == "spdx2tv") {
+          $mainLicenseString = SpdxUtils::removeEmptyLicenses($mainLicenseString);
+          foreach ($mainLicenseString as $i => $licId) {
+              if (StringOperation::stringStartsWith($licId, LicenseRef::SPDXREF_PREFIX)) { continue; }
+              if (StringOperation::stringStartsWith($licId, 'Dual-license')) { continue; }
+              $mainLicenseString[$i] = 'LicenseRef-' . $licId;
+	  }
+      }
+
       $mainLicenseString = SpdxUtils::implodeLicenses(
         SpdxUtils::removeEmptyLicenses($mainLicenseString));
     }
@@ -730,7 +741,17 @@ class SpdxAgent extends Agent
             $concludedLicensesString[] = $this->licensesInDocument[$license]
               ->getLicenseObj()->getSpdxId();
           }
+	}
+
+        /* spdx2tv: Specific handling for OSSelot */
+        if ($this->outputFormat == "spdx2tv") {
+            foreach ($concludedLicensesString as $i => $licId) {
+	        if (StringOperation::stringStartsWith($licId, LicenseRef::SPDXREF_PREFIX)) { continue; }
+		if (StringOperation::stringStartsWith($licId, 'Dual-license')) { continue; }
+		$concludedLicensesString[$i] = 'LicenseRef-' . $licId;
+	    }
         }
+
         $concludedLicensesString = SpdxUtils::implodeLicenses(
           SpdxUtils::removeEmptyLicenses($concludedLicensesString));
       }
@@ -840,10 +861,17 @@ class SpdxAgent extends Agent
    * @param int $uploadId
    * @return bool License comment state (TRUE : show license comment, FALSE : don't show it)
    */
+
   protected function getSPDXReportConf($uploadId, $key)
   {
     $sql = "SELECT ri_spdx_selection FROM report_info WHERE upload_fk = $1";
     $getCommentState = $this->dbManager->getSingleRow($sql, array($uploadId), __METHOD__.'.SPDX_license_comment');
+
+    /* OSSelot */
+    if (empty($getCommentState['ri_spdx_selection'])) {
+	    $getCommentState['ri_spdx_selection'] = "checked,unchecked";
+    }
+
     if (!empty($getCommentState['ri_spdx_selection'])) {
       $getCommentStateSingle = explode(',', $getCommentState['ri_spdx_selection']);
       if ($getCommentStateSingle[$key] === "checked") {

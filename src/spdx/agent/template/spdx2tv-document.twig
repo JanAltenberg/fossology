@@ -42,10 +42,13 @@ LicenseListVersion: 3.22
 ## License Information
 ##-------------------------
 
-{% for licenseData in licenseList %}{% if licenseData.licenseObj.spdxId starts with 'LicenseRef-' or licenseData.licenseObj.shortName starts with 'LicenseRef-' ~%}
+{% for licenseData in licenseList %}{% if licenseData.licenseObj.shortName != "No_license_found" %}
 {%- set licId=licenseData.licenseObj.spdxId %}
 {% if licenseData.licenseObj.shortName starts with 'LicenseRef-' %}
   {% set licId=licenseData.licenseObj.shortName %}
+{%- endif ~%}
+{% if not (licId starts with 'LicenseRef-') %}
+  {% set licId="LicenseRef-#{licId}" %}
 {%- endif ~%}
 LicenseID: {{ licId|replace({' ': '-'}) }}
 LicenseName: {{ licenseData.licenseObj.fullName }}

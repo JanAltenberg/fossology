@@ -16,27 +16,31 @@ FileChecksum: MD5: {{ md5 | lower }}
 LicenseConcluded: NONE
 {% else %}
 LicenseConcluded: {{ concludedLicensesString }}
-{% endif%}
+{%- endif %}
 {% else %}
 LicenseConcluded: NOASSERTION
-{% endif %}
+{%- endif %}
 {% if licenseCommentState %}
 {% if fileData.comments is not empty %}
+
 LicenseComments: <text> {{ fileData.comments|join('\n')
   |replace({'<text>':'&lt;text&gt;','</text>':'&lt;/text&gt;'})
-  |replace({'\f':''}) }} </text>
-{% endif %}
+  |replace({'\f':''}) }} </text>{% endif %}
 {% endif %}
 {% if fileData.scanners|default is empty %}
+
 LicenseInfoInFile: NOASSERTION
 {% else %}
 {% for res in fileData.scanners %}
-{%- set licId=licenseList[res].licenseObj.spdxId %}
+{% set licId=licenseList[res].licenseObj.spdxId %}
 {% if licenseList[res].licenseObj.shortName starts with 'LicenseRef-' %}
-  {% set licId=licenseList[res].licenseObj.shortName %}
+{% set licId=licenseList[res].licenseObj.shortName %}
 {%- endif ~%}
+{% if not (licId starts with 'LicenseRef-') %}
+{% set licId="LicenseRef-#{licId}" %}
+{%- endif -%}
 LicenseInfoInFile: {{ licId|replace({' ':'-'})}}
-{% endfor %}
+{%- endfor ~%}
 {% endif %}
 {# FileSize: 48 Kb (49173 bytes) #}
 {% if fileData.copyrights|default is empty %}

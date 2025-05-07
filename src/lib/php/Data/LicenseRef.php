@@ -111,7 +111,7 @@ class LicenseRef
     } elseif (empty($spdxId)) {
       $spdxLicense = $shortname;
       if (! StringOperation::stringStartsWith($shortname, self::SPDXREF_PREFIX)) {
-        $spdxLicense = self::SPDXREF_PREFIX_FOSSOLOGY . $shortname;
+        $spdxLicense = self::SPDXREF_PREFIX . $shortname;
       }
     } else {
       $spdxLicense = $spdxId;
